@@ -1,7 +1,9 @@
 import socket
-
+import re
 HOST = 'localhost'
 PORT = 9090
+
+intrusive_pattern = re.compile(r'\b(sudo|rm -rf|drop table|shutdown|nmap|ping)\b', re.IGNORECASE)
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect((HOST, PORT))
@@ -13,14 +15,14 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             message = input("Enter a command: ")
             if message.lower() == 'exit':
                 break
-            s.sendall(message.encode())
-            data = s.recv(1024)
-            print(f"Received from server: {data.decode()}")
-
-            if message.startswith('sudo') or message.startswith('DROP TABLE'):
-                print("Intrusive command sent.")
+            
+            if intrusive_pattern.search(message):
+                print("Intrusive command detected. Command not sent.")
             else:
+                s.sendall(message.encode())
+                data = s.recv(1024)
                 print("Command sent successfully.")
+                print(f"Received from server: {data.decode()}")
 
         except KeyboardInterrupt:
             print("\nExiting client...")
